@@ -3,7 +3,6 @@
  * Author: teocci@yandex.com on 2022-6월-10
  */
 
-
 const isBoolean = b => 'boolean' === typeof b
 
 const serialize = o => JSON.stringify(o)

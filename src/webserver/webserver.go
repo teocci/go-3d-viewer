@@ -35,6 +35,7 @@ func Start() {
 	router.StaticFS("/css", http.Dir("web/static/css"))
 	router.StaticFS("/js", http.Dir("web/static/js"))
 	router.StaticFS("/img", http.Dir("web/static/img"))
+	router.StaticFS("/3d", http.Dir("web/static/3d"))
 	router.StaticFile("/page.html", "web/static/page.html")
 
 	router.Use(CORSMiddleware())
