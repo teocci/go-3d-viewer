@@ -1,7 +1,7 @@
-import STL from './loaders/stl.js'
-import OBJ from './loaders/obj.js'
-import FBX from './loaders/fbx.js'
-import PYL from './loaders/ply.js'
+import STLLoader from './loaders/stl-loader.js'
+import OBJLoader from './loaders/obj-loader.js'
+import FBXLoader from './loaders/fbx-loader.js'
+import PYLLoader from './loaders/ply-loader.js'
 import Viewer from './viewer.js'
 
 /**
@@ -10,10 +10,10 @@ import Viewer from './viewer.js'
  */
 export default class ViewerModule {
     static FORMAT_LIST = [
-        {type: STL.TAG, url: STL_FILE},
-        {type: OBJ.TAG, url: OBJ_FILE},
-        {type: FBX.TAG, url: FBX_FILE},
-        {type: PYL.TAG, url: PYL_FILE},
+        {type: STLLoader.TAG, url: STL_FILE},
+        {type: OBJLoader.TAG, url: OBJ_FILE},
+        {type: FBXLoader.TAG, url: FBX_FILE},
+        {type: PYLLoader.TAG, url: PYL_FILE},
     ]
 
     static get instance() {
@@ -50,7 +50,7 @@ export default class ViewerModule {
         ViewerModule.FORMAT_LIST.forEach(f => {
             const viewer = this.viewers.get(f.type)
             viewer.loadModel(f.type, f.url)
-            viewer.onWindowResize()
+            viewer.onResize()
             viewer.animate()
         })
     }

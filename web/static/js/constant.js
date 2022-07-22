@@ -5,11 +5,10 @@
 
 let viewerModule
 
-
 const STL_FILE = '3d/sample.stl'
-const OBJ_FILE = '3d/example.stl'
+const OBJ_FILE = '3d/monkey.obj'
+const FBX_FILE = '3d/sample-1.fbx'
 const PYL_FILE = '3d/example.stl'
-const FBX_FILE = '3d/example.stl'
 
 // Unlike TrackballControls, it maintains the "up" direction object.up (+Y by default).
 //
@@ -17,12 +16,6 @@ const FBX_FILE = '3d/example.stl'
 //    Zoom - middle mouse, or mousewheel / touch: two-finger spread or squish
 //    Pan - right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move
 
-const _changeEvent = {
-    type: 'change'
-};
-const _startEvent = {
-    type: 'start'
-};
-const _endEvent = {
-    type: 'end'
-};
+const _changeEvent = {type: 'change'}
+const _startEvent = {type: 'start'}
+const _endEvent = {type: 'end'}

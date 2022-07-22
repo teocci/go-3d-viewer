@@ -2,7 +2,7 @@
  * Created by RTT.
  * Author: teocci@yandex.com on 2022-7월-12
  */
-export default class STL extends THREE.Loader {
+export default class STLLoader extends THREE.Loader {
     static TAG = 'stl'
 
     constructor(manager) {

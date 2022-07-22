@@ -2,10 +2,10 @@
  * Created by RTT.
  * Author: teocci@yandex.com on 2022-7월-12
  */
-import STL from './loaders/stl.js'
-import OBJ from './loaders/obj.js'
-import FBX from './loaders/fbx.js'
-import PYL from './loaders/ply.js'
+import STLLoader from './loaders/stl-loader.js'
+import ObjLoader from './loaders/obj-loader.js'
+import FBXLoader from './loaders/fbx-loader.js'
+import PYLLoader from './loaders/ply-loader.js'
 import OrbitControls from './controls/orbit.js'
 import Stats from './modules/stats.js'
 
@@ -55,7 +55,38 @@ export default class Viewer {
     }
 
     initEventListeners() {
-        this.placeholder.onresize = () => this.onWindowResize()
+        this.resizeObserver = new ResizeObserver(entries => this.onResize(entries))
+        this.resizeObserver.observe(this.placeholder)
+    }
+
+    initMesh(geometry) {
+        const envTexture = new THREE.CubeTextureLoader().load([
+            'img/px_50.png',
+            'img/nx_50.png',
+            'img/py_50.png',
+            'img/ny_50.png',
+            'img/pz_50.png',
+            'img/nz_50.png'
+        ])
+        envTexture.mapping = THREE.CubeReflectionMapping
+
+        const material = new THREE.MeshPhysicalMaterial({
+            // color: 0xffffff,
+            envMap: envTexture,
+            metalness: 0.25,
+            roughness: 0.5,
+            opacity: 1.0,
+            transparent: true,
+            transmission: 0.99,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.25,
+            fog: true,
+        })
+        this.mesh = new THREE.Mesh(geometry, material)
+
+        this.fitCameraToMesh()
+
+        this.scene.add(this.mesh)
     }
 
     appendElements() {
@@ -66,8 +97,8 @@ export default class Viewer {
     loadModel(type, url) {
         let loader
         switch (type) {
-            case STL.TAG:
-                loader = new STL()
+            case STLLoader.TAG:
+                loader = new STLLoader()
                 loader.load(
                     url,
                     geometry => this.initMesh(geometry),
@@ -75,26 +106,26 @@ export default class Viewer {
                     error => console.log(error)
                 )
                 break
-            case OBJ.TAG:
-                loader = new STL()
+            case ObjLoader.TAG:
+                loader = new ObjLoader()
                 loader.load(
                     url,
-                    geometry => this.initMesh(geometry),
+                    object => this.scene.add(object),
                     xhr => console.log((xhr.loaded / xhr.total) * 100 + '% loaded'),
                     error => console.log(error)
                 )
                 break
-            case FBX.TAG:
-                loader = new STL()
+            case FBXLoader.TAG:
+                loader = new FBXLoader()
                 loader.load(
                     url,
-                    geometry => this.initMesh(geometry),
+                    object => this.scene.add(object),
                     xhr => console.log((xhr.loaded / xhr.total) * 100 + '% loaded'),
                     error => console.log(error)
                 )
                 break
-            case PYL.TAG:
-                loader = new STL()
+            case PYLLoader.TAG:
+                loader = new STLLoader()
                 loader.load(
                     url,
                     geometry => this.initMesh(geometry),
@@ -108,9 +139,7 @@ export default class Viewer {
     }
 
     animate() {
-        requestAnimationFrame(() => {
-            this.animate()
-        })
+        requestAnimationFrame(() => this.animate())
 
         this.controls.update()
 
@@ -123,7 +152,7 @@ export default class Viewer {
         this.renderer.render(this.scene, this.camera)
     }
 
-    onWindowResize() {
+    onResize(entries) {
         this.camera.aspect = this.placeholder.offsetWidth / this.placeholder.offsetHeight
         this.camera.updateProjectionMatrix()
 
@@ -164,35 +193,5 @@ export default class Viewer {
         this.camera.position.copy(this.controls.target).sub(direction)
 
         this.controls.update()
-    }
-
-    initMesh(geometry) {
-        const envTexture = new THREE.CubeTextureLoader().load([
-            'img/px_50.png',
-            'img/nx_50.png',
-            'img/py_50.png',
-            'img/ny_50.png',
-            'img/pz_50.png',
-            'img/nz_50.png'
-        ])
-        envTexture.mapping = THREE.CubeReflectionMapping
-
-        const material = new THREE.MeshPhysicalMaterial({
-            // color: 0xffffff,
-            envMap: envTexture,
-            metalness: 0.25,
-            roughness: 0.5,
-            opacity: 1.0,
-            transparent: true,
-            transmission: 0.99,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.25,
-            fog: true,
-        })
-        this.mesh = new THREE.Mesh(geometry, material)
-
-        this.fitCameraToMesh()
-
-        this.scene.add(this.mesh)
     }
 }
