@@ -50,7 +50,7 @@ export default class ViewerModule {
         ViewerModule.FORMAT_LIST.forEach(f => {
             const viewer = this.viewers.get(f.type)
             viewer.loadModel(f.type, f.url)
-            viewer.onResize()
+            if (f.type !== FBXLoader.TAG) viewer.onResize()
             viewer.animate()
         })
     }

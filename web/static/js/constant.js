@@ -6,9 +6,12 @@
 let viewerModule
 
 const STL_FILE = '3d/sample.stl'
-const OBJ_FILE = '3d/monkey.obj'
-const FBX_FILE = '3d/sample-1.fbx'
-const PYL_FILE = '3d/example.stl'
+const OBJ_FILE = '3d/sample.obj'
+const FBX_FILE = '3d/sample.fbx'
+const PYL_FILE = '3d/sample.ply'
+
+// const OBJ_FILE = '3d/monkey.obj'
+// const FBX_FILE = '3d/sample-1.fbx'
 
 // Unlike TrackballControls, it maintains the "up" direction object.up (+Y by default).
 //
