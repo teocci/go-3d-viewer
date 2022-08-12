@@ -10,6 +10,9 @@ const OBJ_FILE = '3d/sample.obj'
 const FBX_FILE = '3d/sample.fbx'
 const PYL_FILE = '3d/sample.ply'
 
+const SHADER_FRAG_FILE =  'glsl/shader.frag.glsl'
+const SHADER_VERT_FILE =  'glsl/shader.vert.glsl'
+
 // const OBJ_FILE = '3d/monkey.obj'
 // const FBX_FILE = '3d/sample-1.fbx'
 

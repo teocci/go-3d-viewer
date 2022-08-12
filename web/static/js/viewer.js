@@ -21,6 +21,8 @@ export default class Viewer {
     static FILLING_LIGHT_ID = 'fillLight'
     static FILLING_LIGHT_2_ID = 'fillLight2'
 
+    static DEFAULT_CAMERA_ID = 'camera'
+
     static DEFAULT_AMBIENT_LIGHT_PAYLOAD = {
         color: 0x777779,
         v: 0,
@@ -52,7 +54,7 @@ export default class Viewer {
             shadowCameraNear: 1,
             castShadow: true,
             target: {position: {z: 0, y: 0, x: 0}},
-            position: {z: 3.5, y: 4.4, x: -0.5},
+            position: {z: 0, y: 200, x: 0},
         },
         intensity: 1.2,
         color: 0xF9F7F2,
@@ -121,6 +123,54 @@ export default class Viewer {
         type: 'DirectionalLight',
     }
 
+    static DEFAULT_CAMERA_PAYLOAD = {
+        options: {
+            fov: 50,
+            position: {
+                x: .557,
+                y: .7,
+                z: 1.05,
+            },
+            orientation: {
+                x: -.12311346522317435,
+                y: .2311097511511827,
+                z: .029495197631977128,
+                w: .964656099820151,
+            },
+        },
+        components: {
+            orbitCameraComponent: {
+                enabled: true,
+                isBuiltIn: true,
+                scriptId: 'orbit-camera-controller',
+                componentData: {
+                    enablePan: true,
+                },
+            },
+            renderViewComponent: {
+                enabled: true,
+                isBuiltIn: true,
+                scriptId: 'render_view_component',
+                componentData: {
+                    enablePostEffects: true,
+                    enableShadows: true,
+                    enablePreRenderFunctions: true,
+                    renderTarget: null,
+                    clearDepth: true,
+                    clearColor: true,
+                    renderGroup: 0,
+                    viewportHeight: '100%',
+                    viewportWidth: '100%',
+                    viewportBottom: '0px',
+                    viewportLeft: '0px',
+                },
+            },
+        },
+        id: Viewer.DEFAULT_CAMERA_ID,
+        name: 'Default Camera',
+        type: 'PerspectiveCamera',
+    }
+
     static LIGHT_LIST = {
         [Viewer.MAIN_LIGHT_ID]: Viewer.DEFAULT_MAIN_LIGHT_PAYLOAD,
         [Viewer.RIM_LIGHT_ID]: Viewer.DEFAULT_RIM_LIGHT_PAYLOAD,
@@ -128,12 +178,67 @@ export default class Viewer {
         [Viewer.FILLING_LIGHT_2_ID]: Viewer.DEFAULT_FILLING_LIGHT_2_PAYLOAD,
     }
 
+    static SHADER_FRAGMENT = Viewer.loadShader(SHADER_FRAG_FILE)
+    static SHADER_VERTEX = Viewer.loadShader(SHADER_VERT_FILE)
+    static ATF = {n: -1, LEQUAL: 0, GREATER: 1}
+    static MATERIALS = [
+        {
+            name: 'Alpha Prime',
+            alphaTestFunc: Viewer.ATF.GREATER,
+            alphaTest: 0.95,
+            depthWrite: false,
+            side: THREE.FrontSide,
+            drawEverything: true,
+        },
+        {
+            name: 'Back Face',
+            alphaTestFunc: Viewer.ATF.GREATER,
+            alphaTest: 0.95,
+            depthWrite: true,
+            side: THREE.BackSide,
+            drawEverything: false,
+        },
+        {
+            name: 'Front Face',
+            alphaTestFunc: Viewer.ATF.GREATER,
+            alphaTest: 0.95,
+            depthWrite: true,
+            side: THREE.FrontSide,
+            drawEverything: false,
+        },
+        {
+            name: 'Back Fringe',
+            alphaTestFunc: Viewer.ATF.LEQUAL,
+            alphaTest: 0.95,
+            depthWrite: false,
+            side: THREE.BackSide,
+            drawEverything: false,
+        },
+        {
+            name: 'Front Fringe',
+            alphaTestFunc: Viewer.ATF.LEQUAL,
+            alphaTest: 0.95,
+            depthWrite: true,
+            side: THREE.FrontSide,
+            drawEverything: false,
+        },
+    ]
+
     constructor(element) {
         this.placeholder = element
         this.lights = new Map()
+        this.shaders = {
+            frag: null,
+            vert: null,
+        }
+        const ctx = this
+
+        this.loadShaders().then(shaders => {
+            [ctx.shaders.frag, ctx.shaders.vert] = shaders
+        })
 
         this.initLights()
-        // this.initHemisphereLight()
+        this.initHemisphereLight()
         this.initAmbientLight()
 
         this.initCamera()
@@ -149,12 +254,17 @@ export default class Viewer {
         this.appendElements()
     }
 
+    loadShaders() {
+        return Promise.all([Viewer.SHADER_FRAGMENT, Viewer.SHADER_VERTEX])
+    }
+
     initLights() {
         for (const id in Viewer.LIGHT_LIST) {
             const payload = Viewer.LIGHT_LIST[id]
             console.log(`${id}: ${payload}`)
             const options = payload.options
             const {x, y, z} = options.position
+
             const light = new THREE.DirectionalLight(payload.color, payload.intensity)
             light.position.set(x, y, z)
             light.castShadow = options.castShadow
@@ -207,9 +317,16 @@ export default class Viewer {
     }
 
     initCamera() {
+        const payload = Viewer.DEFAULT_CAMERA_PAYLOAD
+        const options = payload.options
         const aspect = this.placeholder.offsetWidth / this.placeholder.offsetHeight
-        this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000)
-        this.camera.position.z = 3
+        this.camera = new THREE.PerspectiveCamera(options.fov, aspect)
+        const {x, y, z} = options.position
+        this.camera.position.set(x, y, z)
+
+        const {a, b, c, d} = options.orientation
+        // this.camera.orientation.set(a, b, c, d)
+        console.log({orientation: this.camera.orientation})
     }
 
     initScene() {
@@ -217,10 +334,10 @@ export default class Viewer {
         // this.scene.environment
 
         const color = 0xa0a0a0
-        const density = 0.0035
-        this.scene.background = new THREE.Color(color)
+        const density = 0.002
+        // this.scene.background = new THREE.Color(color)
         // this.scene.fog = new THREE.FogExp2(color, density)
-        this.scene.fog = new THREE.Fog(color, 1, 1200)
+        this.scene.fog = new THREE.Fog(color, 0.1, 2000)
     }
 
     initRenderer() {
@@ -229,18 +346,20 @@ export default class Viewer {
         this.renderer.setSize(this.placeholder.offsetWidth, this.placeholder.offsetHeight)
         this.renderer.outputEncoding = THREE.sRGBEncoding
         this.renderer.shadowMap.enabled = true
-        // this.renderer.state.setBlending(THREE.NormalBlending)
-    }
-
-    loadGround() {
-        const gridTexture = new THREE.TextureLoader().load('img/grid_texture.png')
-        gridTexture.wrapS = gridTexture.wrapT = THREE.RepeatWrapping
-        gridTexture.repeat.set(20, 20)
-        gridTexture.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
+        this.renderer.physicallyCorrectLights = true
 
         this.renderer.setClearColor(0xa0a0a0, 1)
         this.renderer.sortObjects = false
         this.renderer.state.setBlending(THREE.NormalBlending)
+        // this.renderer.state.setBlending(THREE.NormalBlending)
+    }
+
+    loadGround() {
+        // const gridTexture = new THREE.TextureLoader().load('img/grid_texture.png')
+        // gridTexture.wrapS = gridTexture.wrapT = THREE.RepeatWrapping
+        // gridTexture.repeat.set(20, 20)
+        // gridTexture.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
+        // gridTexture.receiveShadow = true
 
         // const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({
         //     color: 0x999999,
@@ -249,13 +368,26 @@ export default class Viewer {
         // floor.rotation.x = -Math.PI / 2
         // floor.receiveShadow = true
 
-        const groundMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, map: gridTexture})
-        const floor = new THREE.Mesh(new THREE.PlaneBufferGeometry(1000, 1000), groundMaterial)
+        // const groundMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, map: gridTexture})
+        // const floor = new THREE.Mesh(new THREE.PlaneBufferGeometry(100, 100), groundMaterial)
+        // floor.position.y = 0.0
+        // floor.rotation.x = -Math.PI / 2
+        // floor.receiveShadow = true
+        // this.scene.add(floor)
+
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            depthWrite: false,
+        }))
         floor.position.y = 0.0
         floor.rotation.x = -Math.PI / 2
         floor.receiveShadow = true
-
         this.scene.add(floor)
+
+        const grid = new THREE.GridHelper(3000, 50, 0x000000, 0x000000)
+        grid.material.opacity = 0.2
+        grid.material.transparent = true
+        this.scene.add(grid)
     }
 
     initControls() {
@@ -303,6 +435,10 @@ export default class Viewer {
         this.placeholder.appendChild(this.stats.dom)
     }
 
+    static async loadShader(path) {
+        return await (await fetch(path)).text()
+    }
+
     loadModel(type, url) {
         let loader
         switch (type) {
@@ -346,20 +482,32 @@ export default class Viewer {
                 loader.load(
                     url,
                     mesh => {
-                        this.camera.position.set(0.8, 1.4, 1.0)
-                        // this.light.position.set(0.8, 1.4, 1.0)
+                        // this.camera.position.set(0.8, 1.4, 1.0)
+                        // // this.light.position.set(0.8, 1.4, 1.0)
+                        // this.scene.add(new THREE.AxesHelper(500))
+
+                        // mesh.geometry.computeBoundingBox()
+                        // const center = new THREE.Vector3()
+                        // const size = mesh.geometry.boundingBox.getSize(center)
+                        // console.log({size, center, y: mesh.position.y})
+
+                        this.loadGround()
+
+                        this.loadLights()
+
+                        this.setupShaders(mesh)
+                        this.setupBaseRenderPass(mesh)
+                        this.setupCastShadows(mesh)
 
                         mesh.castShadow = true
                         mesh.receiveShadow = true
                         this.mesh = mesh
 
-                        this.loadGround()
                         this.fitCameraToMesh()
 
-                        this.loadLights()
                         this.loadMesh()
                     },
-                    xhr => console.log((xhr.loaded / xhr.total) * 100 + '% loaded'),
+                    xhr => console.log(`${(xhr.loaded / xhr.total) * 100}% loaded`),
                     error => console.log(error),
                 )
                 break
@@ -369,14 +517,27 @@ export default class Viewer {
                     url,
                     geometry => {
                         geometry.computeVertexNormals()
+                        geometry.computeBoundingBox()
 
-                        const material = new THREE.MeshStandardMaterial({color: 0x0055ff, flatShading: true})
+                        const material = new THREE.MeshStandardMaterial({color: 0xC0C0C0, flatShading: true})
                         const mesh = new THREE.Mesh(geometry, material)
 
-                        mesh.position.x = -0.2
-                        mesh.position.y = 0.5
-                        mesh.position.z = -0.2
-                        mesh.scale.multiplyScalar(0.0006)
+                        mesh.geometry.computeBoundingBox()
+
+                        const boundingBox = mesh.geometry.boundingBox
+                        let position = new THREE.Vector3()
+                        position.subVectors(boundingBox.max, boundingBox.min)
+                        position.multiplyScalar(0.5)
+                        position.add(boundingBox.min)
+                        console.log({position})
+
+                        mesh.scale.multiplyScalar(0.1)
+                        const center = new THREE.Vector3()
+                        const size = geometry.boundingBox.getSize(center)
+                        console.log({size, center, y: mesh.position.y})
+                        // mesh.position.x = -0.2
+                        mesh.position.y += (size.y * .1) / 2
+                        // mesh.position.z = -0.2
 
                         mesh.castShadow = true
                         mesh.receiveShadow = true
@@ -388,6 +549,10 @@ export default class Viewer {
 
                         this.loadLights()
                         this.loadMesh()
+
+                        // position = new THREE.Vector3()
+                        // position.setFromMatrixPosition(mesh.matrixWorld)
+                        // console.log({position})
                     },
                     xhr => console.log((xhr.loaded / xhr.total) * 100 + '% loaded'),
                     error => console.log(error),
@@ -396,6 +561,90 @@ export default class Viewer {
             default:
                 throw new Error(`InvalidChartType: ${type} not supported`)
         }
+    }
+
+    setupShaders(object) {
+        const ctx = this
+        object.traverse(child => {
+            if (child.type === 'SkinnedMesh' || child.type === 'Mesh') {
+                child.material.vertexShader = ctx.shaders.vert
+                child.material.fragmentShader = ctx.shaders.frag
+                child.material.uniforms = child.material.uniforms ?? {}
+                child.material.uniforms.alphaTestFunc = {
+                    type: 'i',
+                    value: Viewer.ATF.NONE,
+                }
+                child.material.uniforms.alphaTest = {
+                    type: 'f',
+                    value: 0,
+                }
+                child.material.needsUpdate = true
+            }
+        })
+    }
+
+    setupRenderPassForGraph(object, material) {
+        object.traverse(child => {
+            if (child.type === 'SkinnedMesh' || child.type === 'Mesh') {
+                const m = child.material
+                m.depthWrite = material.depthWrite
+                m.depthTest = true
+                m.side = material.side
+                if (m.uniforms) {
+                    m.uniforms.alphaTest.value = material.alphaTest
+                    m.uniforms.alphaTest.needsUpdate = true
+                    m.uniforms.alphaTestFunc.value = material.alphaTestFunc
+                    m.uniforms.alphaTestFunc.needsUpdate = true
+                }
+            }
+        })
+    }
+
+    setupBaseRenderPass(object) {
+        this.setupRenderPassForGraph(object, Viewer.MATERIALS[2])
+    }
+
+    setupCastShadows(object) {
+        object.traverse(child => {
+            if (child.isMesh) {
+                child.castShadow = true
+                child.receiveShadow = true
+            }
+        })
+    }
+
+    calculateCenterOfMass(mesh) {
+        const centroidNominator = new THREE.Vector3()
+        let centroidDenominator = 0, centroid
+
+        const faces = mesh.geometry.getIndex().length
+        for (let i = 0; i < faces; i++) {
+            const Pi = mesh.geometry.getIndex()[i].a
+            const Qi = mesh.geometry.getIndex()[i].b
+            const Ri = mesh.geometry.getIndex()[i].c
+
+            const a = new THREE.Vector3(mesh.geometry.vertices[Pi].x, mesh.geometry.vertices[Pi].y, mesh.geometry.vertices[Pi].z)
+            const b = new THREE.Vector3(mesh.geometry.vertices[Qi].x, mesh.geometry.vertices[Qi].y, mesh.geometry.vertices[Qi].z)
+            const c = new THREE.Vector3(mesh.geometry.vertices[Ri].x, mesh.geometry.vertices[Ri].y, mesh.geometry.vertices[Ri].z)
+
+            const ab = b.clone().sub(a)
+            const ac = c.clone().sub(a)
+
+            const cross = new THREE.Vector3()
+            cross.crossVectors(ab, ac)
+
+            const faceArea = cross.lengthSq() / 2
+            const faceCentroid = new THREE.Vector3((a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3, (a.z + b.z + c.z) / 3)
+
+            if (!isNaN(faceArea)) {
+                centroidNominator.add(faceCentroid.multiplyScalar(faceArea))
+                centroidDenominator += faceArea
+            }
+        }
+
+        centroid = centroidNominator.divideScalar(centroidDenominator)
+
+        return centroid
     }
 
     animate() {

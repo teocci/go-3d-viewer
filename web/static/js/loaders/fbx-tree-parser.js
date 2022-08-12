@@ -505,13 +505,13 @@ export default class FBXTreeParser {
         const morphTargets = {}
 
         if ('Deformer' in fbxTree.Objects) {
-            const DeformerNodes = fbxTree.Objects.Deformer
-            for (const nodeID in DeformerNodes) {
-                const deformerNode = DeformerNodes[nodeID]
+            const deformerNodes = fbxTree.Objects.Deformer
+            for (const nodeID in deformerNodes) {
+                const deformerNode = deformerNodes[nodeID]
                 const relationships = connections.get(parseInt(nodeID))
 
                 if (deformerNode.attrType === 'Skin') {
-                    const skeleton = this.parseSkeleton(relationships, DeformerNodes)
+                    const skeleton = this.parseSkeleton(relationships, deformerNodes)
                     skeleton.ID = nodeID
 
                     if (relationships.parents.length > 1) console.warn('THREE.FBXLoader: skeleton attached to more than one geometry is not supported.')
@@ -523,7 +523,7 @@ export default class FBXTreeParser {
                         id: nodeID,
                     }
 
-                    morphTarget.rawTargets = this.parseMorphTargets(relationships, DeformerNodes)
+                    morphTarget.rawTargets = this.parseMorphTargets(relationships, deformerNodes)
                     morphTarget.id = nodeID
 
                     if (relationships.parents.length > 1) console.warn('THREE.FBXLoader: morph target attached to more than one geometry is not supported.')

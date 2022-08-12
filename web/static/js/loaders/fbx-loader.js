@@ -27,7 +27,7 @@ export default class FBXLoader extends THREE.Loader {
         loader.setRequestHeader(scope.requestHeader)
         loader.setWithCredentials(scope.withCredentials)
 
-        loader.load(url, function (buffer) {
+        loader.load(url, buffer => {
             try {
                 onLoad(scope.parse(buffer, path))
             } catch (e) {
