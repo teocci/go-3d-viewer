@@ -41,8 +41,10 @@ func (l *localFileSystem) Exists(prefix string, filepath string) bool {
 		if !l.indexes && stats.IsDir() {
 			return false
 		}
+
 		return true
 	}
+
 	return false
 }
 
@@ -56,6 +58,7 @@ func Serve(urlPrefix string, fs ServeFileSystem) gin.HandlerFunc {
 	if urlPrefix != "" {
 		fileServer = http.StripPrefix(urlPrefix, fileServer)
 	}
+
 	return func(c *gin.Context) {
 		if fs.Exists(urlPrefix, c.Request.URL.Path) {
 			fileServer.ServeHTTP(c.Writer, c.Request)

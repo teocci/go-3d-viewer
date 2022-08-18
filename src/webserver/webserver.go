@@ -6,12 +6,12 @@ package webserver
 import (
 	"embed"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"mime"
 	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/teocci/go-3d-viewer/src/config"
 )
 
@@ -38,9 +38,12 @@ func Start() {
 	router.StaticFS("/3d", http.Dir("web/static/3d"))
 	router.StaticFS("/glsl", http.Dir("web/static/glsl"))
 	router.StaticFile("/page.html", "web/static/page.html")
+	router.StaticFile("/viewer.html", "web/static/viewer.html")
 
 	router.Use(CORSMiddleware())
+
 	fmt.Printf("[address] %v", addressFormat(address))
+
 	err := router.Run(address)
 	if err != nil {
 		log.Fatalln("Start HTTP Server error", err)

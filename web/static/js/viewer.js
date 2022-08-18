@@ -247,7 +247,7 @@ export default class Viewer {
         this.initRenderer()
         this.initControls()
 
-        this.stats = Stats()
+        this.stats = new Stats()
 
         this.initEventListeners()
 
